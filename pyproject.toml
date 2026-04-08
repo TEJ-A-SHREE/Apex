@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "news-writer-env"
+version = "1.0.0"
+description = "An OpenEnv-compliant RL environment for news article generation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["openenv", "reinforcement-learning", "nlp", "news-writing"]
+dependencies = [
+    "openenv-core>=0.2.0",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "pydantic>=2.0.0",
+    "crewai>=0.28.0",
+    "crewai-tools>=0.1.0",
+    "python-dotenv>=1.0.0",
+    "openai>=1.0.0",
+    "requests>=2.25.0",
+]
+
+[project.scripts]
+server = "server.app:app"
+
+[project.urls]
+Homepage = "https://huggingface.co/spaces/Prathim/news-openenv-apex"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*.py"]

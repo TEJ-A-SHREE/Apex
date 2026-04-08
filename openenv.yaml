@@ -1,0 +1,82 @@
+name: news-writer-env
+version: 1.0.0
+description: >
+  An RL environment where an agent learns to write high-quality news articles.
+  The agent receives a topic (and optional constraints) and must produce a
+  well-structured markdown article. Graders evaluate word count, structure,
+  topic relevance, keyword compliance, and factual depth.
+
+author: openenv-contributor
+tags:
+  - openenv
+  - nlp
+  - content-generation
+  - real-world
+  - news-writing
+
+tasks:
+  - id: easy
+    name: Basic Article Generation
+    difficulty: easy
+    description: >
+      Write a coherent news article on a well-known topic.
+      Graded on: word count (200+), paragraph count (3+),
+      markdown title presence, topic relevance.
+
+  - id: medium
+    name: Constrained Article Writing
+    difficulty: medium
+    description: >
+      Write an article meeting specific constraints including
+      required keywords, word count range (250-500), and structure.
+
+  - id: hard
+    name: Structured Investigative Article
+    difficulty: hard
+    description: >
+      Write a full investigative article with required section headings
+      (Introduction, Current Trends, Challenges, Future Outlook),
+      at least 2 statistics/data points, and 400-700 words.
+
+action_space:
+  type: text
+  description: A markdown-formatted news article
+
+observation_space:
+  type: object
+  fields:
+    topic: string - the news topic to write about
+    difficulty: string - easy | medium | hard
+    constraints: object - optional writing constraints
+    instructions: string - human-readable task instructions
+    step_count: integer - steps taken in current episode
+
+reward:
+  range: [0.0, 1.0]
+  type: continuous
+  description: >
+    Weighted combination of rule-based criteria:
+    word count, paragraph structure, title presence,
+    topic relevance, keyword compliance, section headings,
+    and statistical content. Fully deterministic.
+
+episode:
+  max_steps: 1
+  description: Single-turn episode — agent submits one article per topic
+
+api:
+  reset: POST /reset
+  step: POST /step
+  state: GET /state
+  health: GET /health
+  tasks: GET /tasks
+
+docker:
+  port: 7860
+  env_vars:
+    - GOOGLE_API_KEY
+    - SERPER_API_KEY
+    - OPENAI_API_KEY
+    - API_BASE_URL
+    - MODEL_NAME
+    - DIFFICULTY

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsWriterEnv | RL Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15) 0%, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease-in;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #3b82f6, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        select {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            color: white;
+            border: 1px solid var(--glass-border);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        select:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            flex-grow: 1;
+        }
+
+        .article-view {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: 100%;
+        }
+
+        .article-content {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            padding: 1.5rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 600px;
+            border: 1px solid var(--glass-border);
+            line-height: 1.6;
+        }
+
+        .article-content h1, .article-content h2, .article-content h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: #e2e8f0;
+        }
+        
+        .article-content p {
+            margin-bottom: 1rem;
+        }
+
+        .article-content ul, .article-content ol {
+            margin-bottom: 1rem;
+            margin-left: 1.5rem;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .score-card {
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 8px solid var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            transition: border-color 1s ease;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .breakdown-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .breakdown-val {
+            font-weight: 600;
+        }
+
+        .breakdown-val.good { color: var(--success); }
+        .breakdown-val.bad { color: #ef4444; }
+
+        .loader {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 2rem 0;
+        }
+
+        .loader span {
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        .loader span:nth-child(2) { animation-delay: 0.2s; }
+        .loader span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topic-badge {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        #empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+            gap: 1rem;
+        }
+        
+        #empty-state svg {
+            width: 48px;
+            height: 48px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .article-content { max-height: 400px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>NewsWriterEnv Dashboard</h1>
+        <p>Watch RL Agents Write & get Graded in Real-Time</p>
+    </div>
+
+    <div class="glass-panel controls">
+        <select id="difficulty">
+            <option value="easy">Difficulty: Easy</option>
+            <option value="medium">Difficulty: Medium</option>
+            <option value="hard">Difficulty: Hard</option>
+        </select>
+        <button id="generateBtn" onclick="runSimulation()">Generate & Grade Article</button>
+    </div>
+
+    <div class="loader" id="loader">
+        <span></span><span></span><span></span>
+        <div style="color: var(--text-muted); margin-left:10px; font-weight:500;">AI is researching and writing (takes 30-60s)...</div>
+    </div>
+
+    <div class="dashboard" id="dashboard" style="display: none;">
+        <div class="glass-panel article-view">
+            <div>
+                <span class="topic-badge" id="topicBadge">Topic: AI in Healthcare</span>
+                <h3 style="margin-bottom: 0.5rem;">Generated Article</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);" id="instructionsTxt"></p>
+            </div>
+            
+            <div class="article-content" id="articleContent">
+                <!-- Markdown rendered here -->
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="glass-panel score-card">
+                <h3>Final Reward</h3>
+                <div style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.85rem;">Determined by rule-based grader</div>
+                <div class="score-circle" id="scoreCircle">0.00</div>
+            </div>
+
+            <div class="glass-panel">
+                <h3 style="margin-bottom: 1.5rem;">Score Breakdown</h3>
+                <div id="breakdownList">
+                    <!-- Dynamic breakdown items -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel" id="emptyStateContainer" style="flex-grow: 1;">
+        <div id="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v10a2 2 0 01-2 2z" />
+            </svg>
+            <h3>Ready to Simulation</h3>
+            <p>Select a difficulty and click 'Generate & Grade' to watch the AI agents work.</p>
+        </div>
+    </div>
+
+    <script>
+        async function runSimulation() {
+            const btn = document.getElementById('generateBtn');
+            const difficulty = document.getElementById('difficulty').value;
+            const loader = document.getElementById('loader');
+            const dashboard = document.getElementById('dashboard');
+            const emptyState = document.getElementById('emptyStateContainer');
+            
+            // UI State updates
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            loader.style.display = "flex";
+            dashboard.style.display = "none";
+            emptyState.style.display = "none";
+
+            try {
+                // Call our new API endpoint
+                const res = await fetch(`/demo/run?difficulty=${difficulty}`, {
+                    method: 'POST'
+                });
+                
+                if (!res.ok) throw new Error("Server error");
+                const data = await res.json();
+                
+                // Update UI with results
+                document.getElementById('topicBadge').innerText = `Topic: ${data.topic}`;
+                document.getElementById('instructionsTxt').innerText = data.instructions.replace(/\n/g, '  |  ');
+                document.getElementById('articleContent').innerHTML = marked.parse(data.article);
+                
+                // Score
+                const score = parseFloat(data.reward);
+                const scoreEl = document.getElementById('scoreCircle');
+                scoreEl.innerText = score.toFixed(2);
+                
+                if(score > 0.8) scoreEl.style.borderColor = "var(--success)";
+                else if (score > 0.5) scoreEl.style.borderColor = "var(--warning)";
+                else scoreEl.style.borderColor = "#ef4444";
+
+                // Breakdown list
+                const bdList = document.getElementById('breakdownList');
+                bdList.innerHTML = '';
+                
+                for (const [key, val] of Object.entries(data.breakdown)) {
+                    let displayVal = val;
+                    let valClass = "";
+                    
+                    if (typeof val === "boolean") {
+                        displayVal = val ? "Yes" : "No";
+                        valClass = val ? "good" : "bad";
+                    } else if (typeof val === "number") {
+                        if (val > 0) valClass = "good";
+                        displayVal = val;
+                    }
+                    
+                    const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    
+                    bdList.innerHTML += `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">${label}</span>
+                            <span class="breakdown-val ${valClass}">${displayVal}</span>
+                        </div>
+                    `;
+                }
+
+                loader.style.display = "none";
+                dashboard.style.display = "grid";
+
+            } catch (err) {
+                alert("An error occurred. Check server logs!");
+                loader.style.display = "none";
+                emptyState.style.display = "block";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Generate & Grade Article";
+            }
+        }
+    </script>
+</body>
+</html>
