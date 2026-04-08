@@ -30,12 +30,13 @@ load_dotenv()
 # ─── Config ─────────────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN = os.getenv("HF_TOKEN")
-
-# Optional - if you use from_docker_image():
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY", "")
 ENV_URL = os.getenv("ENV_URL", "http://localhost:7860").rstrip("/")
-EPISODES_PER_TASK = int(os.getenv("EPISODES_PER_TASK", "3"))
+
+try:
+    EPISODES_PER_TASK = int(os.getenv("EPISODES_PER_TASK", "3"))
+except (TypeError, ValueError):
+    EPISODES_PER_TASK = 3
 
 client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
 
@@ -105,24 +106,52 @@ def run_task(difficulty: str) -> dict:
     rewards = []
 
     for episode in range(1, EPISODES_PER_TASK + 1):
-        # Reset
-        reset_resp = reset_env(difficulty)
-        obs = reset_resp["observation"]
-        topic = obs["topic"]
-        instructions = obs["instructions"]
-        constraints = obs.get("constraints", {})
+        topic = difficulty
+        instructions = ""
+        constraints = {}
+        article = ""
+        reward = 0.0
+        done = False
+        info = {}
 
-        # Generate article
         try:
-            article = generate_article(topic, instructions)
-        except Exception as e:
-            article = f"# {topic}\n\nUnable to generate article: {e}"
+            # Reset
+            reset_resp = reset_env(difficulty)
+            obs = reset_resp["observation"]
+            topic = obs.get("topic", difficulty)
+            instructions = obs.get("instructions", "")
+            constraints = obs.get("constraints", {})
 
-        # Step
-        step_resp = step_env(article)
-        reward = step_resp["reward"]
-        done = step_resp["done"]
-        info = step_resp.get("info", {})
+            # Generate article
+            try:
+                article = generate_article(topic, instructions)
+            except Exception as e:
+                article = f"# {topic}\n\nUnable to generate article: {e}"
+
+            # Step
+            step_resp = step_env(article)
+            reward = step_resp.get("reward", 0.0)
+            done = step_resp.get("done", False)
+            info = step_resp.get("info", {})
+        except Exception as e:
+            reward = 0.0
+            done = True
+            info = {}
+            article = article or f"# {topic}\n\nEpisode failed: {e}"
+            step_payload = {
+                "task": difficulty,
+                "episode": episode,
+                "topic": topic,
+                "reward": reward,
+                "done": done,
+                "error": str(e),
+                "word_count": len(article.split()),
+                "breakdown": {},
+                "constraints": constraints,
+            }
+            print(f"[STEP]  {json.dumps(step_payload)}", flush=True)
+            rewards.append(reward)
+            continue
 
         rewards.append(reward)
 
@@ -173,17 +202,27 @@ def main():
 
     results = {}
     for difficulty in DIFFICULTIES:
-        result = run_task(difficulty)
-        results[difficulty] = result
+        try:
+            result = run_task(difficulty)
+            results[difficulty] = result
+        except Exception as e:
+            print(f"ERROR: Task '{difficulty}' failed: {e}", flush=True)
+            results[difficulty] = {
+                "task": difficulty,
+                "mean_reward": 0.0,
+                "episodes": 0,
+                "rewards": [],
+                "error": str(e),
+            }
         print(flush=True)
 
     # Final summary
     print("=== SUMMARY ===", flush=True)
     for diff, res in results.items():
-        print(f"  {diff:8s}: mean_reward = {res['mean_reward']}", flush=True)
+        print(f"  {diff:8s}: mean_reward = {res.get('mean_reward', 0.0)}", flush=True)
 
     overall = round(
-        sum(r["mean_reward"] for r in results.values()) / len(results), 4
+        sum(r.get("mean_reward", 0.0) for r in results.values()) / len(results), 4
     )
     print(f"  {'overall':8s}: mean_reward = {overall}", flush=True)
     print(
@@ -193,4 +232,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"FATAL: unexpected error: {e}", flush=True)
+        sys.exit(1)
