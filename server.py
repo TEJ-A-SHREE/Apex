@@ -34,7 +34,7 @@ env = _envs[_active_difficulty]
 
 
 class StepRequest(BaseModel):
-    article: str
+    article: str = ""
 
 
 class ResetResponse(BaseModel):
@@ -183,3 +183,4 @@ def tasks():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
