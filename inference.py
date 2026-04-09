@@ -69,7 +69,7 @@ def step_env(article: str) -> dict:
         return resp.json()
     except Exception as e:
         print(f"ERROR: step_env failed: {e}", flush=True)
-        return {"reward": 0.0, "done": True, "info": {}}
+        return {"reward": 0.001, "done": True, "info": {}}
 
 
 # ─── Agent ───────────────────────────────────────────────────────────────────
