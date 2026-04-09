@@ -30,13 +30,12 @@ load_dotenv()
 # ─── Config ─────────────────────────────────────────────────────────────────
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY", "")
-ENV_URL = os.getenv("ENV_URL", "http://localhost:7860").rstrip("/")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-try:
-    EPISODES_PER_TASK = int(os.getenv("EPISODES_PER_TASK", "3"))
-except (TypeError, ValueError):
-    EPISODES_PER_TASK = 3
+# Optional - if you use from_docker_image():
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+ENV_URL = os.getenv("ENV_URL", "http://localhost:7860").rstrip("/")
+EPISODES_PER_TASK = int(os.getenv("EPISODES_PER_TASK", "3"))
 
 client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
 
@@ -46,23 +45,31 @@ DIFFICULTIES = ["easy", "medium", "hard"]
 # ─── Env helpers ─────────────────────────────────────────────────────────────
 
 def reset_env(difficulty: str) -> dict:
-    resp = requests.post(
-        f"{ENV_URL}/reset",
-        params={"difficulty": difficulty},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    try:
+        resp = requests.post(
+            f"{ENV_URL}/reset",
+            params={"difficulty": difficulty},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        print(f"ERROR: reset_env failed: {e}", flush=True)
+        return {"observation": {"topic": "Fallback Topic", "instructions": "Fallback constraints due to error.", "constraints": {}}}
 
 
 def step_env(article: str) -> dict:
-    resp = requests.post(
-        f"{ENV_URL}/step",
-        json={"article": article},
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.json()
+    try:
+        resp = requests.post(
+            f"{ENV_URL}/step",
+            json={"article": article},
+            timeout=120,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        print(f"ERROR: step_env failed: {e}", flush=True)
+        return {"reward": 0.0, "done": True, "info": {}}
 
 
 # ─── Agent ───────────────────────────────────────────────────────────────────
@@ -106,52 +113,24 @@ def run_task(difficulty: str) -> dict:
     rewards = []
 
     for episode in range(1, EPISODES_PER_TASK + 1):
-        topic = difficulty
-        instructions = ""
-        constraints = {}
-        article = ""
-        reward = 0.0
-        done = False
-        info = {}
+        # Reset
+        reset_resp = reset_env(difficulty)
+        obs = reset_resp["observation"]
+        topic = obs["topic"]
+        instructions = obs["instructions"]
+        constraints = obs.get("constraints", {})
 
+        # Generate article
         try:
-            # Reset
-            reset_resp = reset_env(difficulty)
-            obs = reset_resp["observation"]
-            topic = obs.get("topic", difficulty)
-            instructions = obs.get("instructions", "")
-            constraints = obs.get("constraints", {})
-
-            # Generate article
-            try:
-                article = generate_article(topic, instructions)
-            except Exception as e:
-                article = f"# {topic}\n\nUnable to generate article: {e}"
-
-            # Step
-            step_resp = step_env(article)
-            reward = step_resp.get("reward", 0.0)
-            done = step_resp.get("done", False)
-            info = step_resp.get("info", {})
+            article = generate_article(topic, instructions)
         except Exception as e:
-            reward = 0.0
-            done = True
-            info = {}
-            article = article or f"# {topic}\n\nEpisode failed: {e}"
-            step_payload = {
-                "task": difficulty,
-                "episode": episode,
-                "topic": topic,
-                "reward": reward,
-                "done": done,
-                "error": str(e),
-                "word_count": len(article.split()),
-                "breakdown": {},
-                "constraints": constraints,
-            }
-            print(f"[STEP]  {json.dumps(step_payload)}", flush=True)
-            rewards.append(reward)
-            continue
+            article = f"# {topic}\n\nUnable to generate article: {e}"
+
+        # Step
+        step_resp = step_env(article)
+        reward = step_resp["reward"]
+        done = step_resp["done"]
+        info = step_resp.get("info", {})
 
         rewards.append(reward)
 
@@ -202,27 +181,17 @@ def main():
 
     results = {}
     for difficulty in DIFFICULTIES:
-        try:
-            result = run_task(difficulty)
-            results[difficulty] = result
-        except Exception as e:
-            print(f"ERROR: Task '{difficulty}' failed: {e}", flush=True)
-            results[difficulty] = {
-                "task": difficulty,
-                "mean_reward": 0.0,
-                "episodes": 0,
-                "rewards": [],
-                "error": str(e),
-            }
+        result = run_task(difficulty)
+        results[difficulty] = result
         print(flush=True)
 
     # Final summary
     print("=== SUMMARY ===", flush=True)
     for diff, res in results.items():
-        print(f"  {diff:8s}: mean_reward = {res.get('mean_reward', 0.0)}", flush=True)
+        print(f"  {diff:8s}: mean_reward = {res['mean_reward']}", flush=True)
 
     overall = round(
-        sum(r.get("mean_reward", 0.0) for r in results.values()) / len(results), 4
+        sum(r["mean_reward"] for r in results.values()) / len(results), 4
     )
     print(f"  {'overall':8s}: mean_reward = {overall}", flush=True)
     print(
@@ -232,8 +201,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print(f"FATAL: unexpected error: {e}", flush=True)
-        sys.exit(1)
+    main()
