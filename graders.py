@@ -168,7 +168,7 @@ def grade_easy(article: str, topic: str, constraints: dict = None) -> float:
         scores.append(("starts_with", 1.0, 0.20))
 
     total = sum(score * weight for _, score, weight in scores)
-    return round(min(0.999, max(0.001, total)), 4)
+    return round(min(0.95, max(0.05, total)), 4)
 
 
 def grade_medium(article: str, topic: str, constraints: dict) -> float:
@@ -289,3 +289,5 @@ def grade(article: str, topic: str, difficulty: str, constraints: dict) -> float
         return grade_hard(article, topic, constraints)
     else:
         raise ValueError(f"Unknown difficulty: {difficulty}")
+
+
