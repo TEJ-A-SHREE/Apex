@@ -52,7 +52,7 @@ observation_space:
     step_count: integer - steps taken in current episode
 
 reward:
-  range: [0.001, 0.999]
+  range: [0.0, 1.0]
   type: continuous
   description: >
     Weighted combination of rule-based criteria:
