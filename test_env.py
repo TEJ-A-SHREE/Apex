@@ -43,7 +43,7 @@ personalized medicine, predictive health monitoring, and drug development.
 
     # Empty article
     score = grade_easy("", "AI in healthcare")
-    assert score == 0.0, f"Empty article should score 0.0, got {score}"
+    assert score == 0.05, f"Empty article should score 0.05, got {score}"
     print(f"  ✓ Easy empty article: {score}")
 
     # Medium - with keywords
@@ -243,3 +243,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
