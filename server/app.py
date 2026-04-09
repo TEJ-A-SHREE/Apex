@@ -34,7 +34,7 @@ env = _envs[_active_difficulty]
 
 
 class StepRequest(BaseModel):
-    article: str
+    article: str = ""
 
 
 class ResetResponse(BaseModel):
