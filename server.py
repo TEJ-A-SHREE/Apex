@@ -118,8 +118,10 @@ def step(request: StepRequest):
     Submit an article and receive a reward.
     Body: { "article": "your article text here" }
     """
-    if not request.article or not request.article.strip():
-        raise HTTPException(status_code=400, detail="Article cannot be empty")
+    # If the article is empty, we will let the environment evaluate it normally
+    # so that it gracefully returns the minimum bound (e.g. 0.001) instead of an HTTP error.
+    # if not request.article or not request.article.strip():
+    #     raise HTTPException(status_code=400, detail="Article cannot be empty")
 
     action = Action(article=request.article)
     obs, reward, done, info = env.step(action)
