@@ -137,7 +137,7 @@ def grade_easy(article: str, topic: str, constraints: dict = None) -> float:
       - Starts with phrase         (20%)
     """
     if not article or not article.strip():
-        return 0.0
+        return 0.001
 
     scores = []
 
@@ -168,7 +168,7 @@ def grade_easy(article: str, topic: str, constraints: dict = None) -> float:
         scores.append(("starts_with", 1.0, 0.20))
 
     total = sum(score * weight for _, score, weight in scores)
-    return round(min(1.0, max(0.0, total)), 4)
+    return round(min(0.999, max(0.001, total)), 4)
 
 
 def grade_medium(article: str, topic: str, constraints: dict) -> float:
@@ -180,7 +180,7 @@ def grade_medium(article: str, topic: str, constraints: dict) -> float:
       - Word count in range        (30%)
     """
     if not article or not article.strip():
-        return 0.0
+        return 0.001
 
     # Easy base score
     easy_score = grade_easy(article, topic, constraints)
@@ -209,7 +209,7 @@ def grade_medium(article: str, topic: str, constraints: dict) -> float:
     else:
         total = (easy_score * 0.40) + (kw_score * 0.30) + (range_score * 0.30)
 
-    return round(min(1.0, max(0.0, total)), 4)
+    return round(min(0.999, max(0.001, total)), 4)
 
 
 def grade_hard(article: str, topic: str, constraints: dict) -> float:
@@ -223,7 +223,7 @@ def grade_hard(article: str, topic: str, constraints: dict) -> float:
       - Topic relevance >= 0.7     (10%)
     """
     if not article or not article.strip():
-        return 0.0
+        return 0.001
 
     # Easy base
     easy_score = grade_easy(article, topic, constraints)
@@ -276,7 +276,7 @@ def grade_hard(article: str, topic: str, constraints: dict) -> float:
         + freq_score * 0.10
         + nth_score * 0.10
     )
-    return round(min(1.0, max(0.0, total)), 4)
+    return round(min(0.999, max(0.001, total)), 4)
 
 
 def grade(article: str, topic: str, difficulty: str, constraints: dict) -> float:
