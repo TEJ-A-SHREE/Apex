@@ -8,7 +8,7 @@ load_dotenv()
 llm = LLM(
     model=os.getenv("MODEL_NAME", "gpt-4o-mini"),
     temperature=0.5,
-    api_key=os.getenv("OPENAI_API_KEY"),
+    api_key=os.getenv("OPENAI_API_KEY", "dummy_key_to_prevent_import_crash"),
 )
 
 news_researcher = Agent(
