@@ -151,7 +151,7 @@ def tasks():
                     "Requires: 200+ words, 3+ paragraphs, markdown title, on-topic content."
                 ),
                 "difficulty": "easy",
-                "reward_range": [0.0, 1.0],
+                "reward_range": [0.001, 0.999],
             },
             {
                 "id": "medium",
@@ -161,7 +161,7 @@ def tasks():
                     "required keywords, word count range, and proper structure."
                 ),
                 "difficulty": "medium",
-                "reward_range": [0.0, 1.0],
+                "reward_range": [0.001, 0.999],
             },
             {
                 "id": "hard",
@@ -172,7 +172,7 @@ def tasks():
                     "2+ statistics, and balanced tone on a niche/controversial topic."
                 ),
                 "difficulty": "hard",
-                "reward_range": [0.0, 1.0],
+                "reward_range": [0.001, 0.999],
             },
         ]
     }
