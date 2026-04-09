@@ -1,6 +1,6 @@
 """
 Deterministic, rule-based graders for each task difficulty.
-All graders return a float in [0.0, 1.0].
+All graders return a float in [0.05, 0.95].
 Same input always produces same score (deterministic).
 Different inputs produce different scores (non-trivial).
 """
