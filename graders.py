@@ -165,7 +165,7 @@ def grade_easy(article: str, topic: str, constraints: dict = None) -> float:
         scores.append(("starts_with", sw_score, 0.20))
     else:
         # Default if no constraint passed (distribute weight)
-        scores.append(("starts_with", 1.0, 0.20))
+        scores.append(("starts_with", 0.99, 0.20))
 
     total = sum(score * weight for _, score, weight in scores)
     return round(min(0.999, max(0.001, total)), 4)
@@ -198,9 +198,9 @@ def grade_medium(article: str, topic: str, constraints: dict) -> float:
     req_paragraphs = constraints.get("exact_paragraphs", 0)
     if req_paragraphs > 0:
         pc = _count_paragraphs(article)
-        para_score = 1.0 if pc == req_paragraphs else 0.0
+        para_score = 0.999 if pc == req_paragraphs else 0.01
     else:
-        para_score = 1.0
+        para_score = 0.999
 
     req_quotes = constraints.get("required_quotes", 0)
     if req_quotes > 0:
