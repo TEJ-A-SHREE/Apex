@@ -153,7 +153,7 @@ def tasks():
                     "Requires: 200+ words, 3+ paragraphs, markdown title, on-topic content."
                 ),
                 "difficulty": "easy",
-                "reward_range": [0.0, 1.0],
+                "reward_range": [0.05, 0.95],
             },
             {
                 "id": "medium",
@@ -163,7 +163,7 @@ def tasks():
                     "required keywords, word count range, and proper structure."
                 ),
                 "difficulty": "medium",
-                "reward_range": [0.0, 1.0],
+                "reward_range": [0.05, 0.95],
             },
             {
                 "id": "hard",
@@ -174,7 +174,7 @@ def tasks():
                     "2+ statistics, and balanced tone on a niche/controversial topic."
                 ),
                 "difficulty": "hard",
-                "reward_range": [0.0, 1.0],
+                "reward_range": [0.05, 0.95],
             },
         ]
     }
@@ -183,4 +183,3 @@ def tasks():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
