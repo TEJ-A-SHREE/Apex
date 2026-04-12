@@ -1,6 +1,6 @@
 """
 Deterministic, rule-based graders for each task difficulty.
-All graders return a float strictly in (0, 1), clamped to [0.001, 0.999].
+All graders return a float strictly, clamped to [0.001, 0.999].
 Same input always produces same score (deterministic).
 Different inputs produce different scores (non-trivial).
 """
@@ -29,7 +29,7 @@ def _topic_relevance(text: str, topic: str) -> float:
     """Check what fraction of topic words appear in the article."""
     topic_words = set(w.lower() for w in topic.split() if len(w) > 3)
     if not topic_words:
-        return 0.0
+        return 0.01
     text_lower = text.lower()
     matched = sum(1 for w in topic_words if w in text_lower)
     return matched / len(topic_words)
@@ -38,7 +38,7 @@ def _topic_relevance(text: str, topic: str) -> float:
 def _keywords_present(text: str, keywords: list) -> float:
     """Return fraction of required keywords found in text."""
     if not keywords:
-        return 1.0
+        return 0.99
     text_lower = text.lower()
     found = sum(1 for kw in keywords if kw.lower() in text_lower)
     return found / len(keywords)
@@ -48,19 +48,19 @@ def _word_count_in_range(text: str, min_words: int, max_words: int) -> float:
     """Score 1.0 if in range, partial credit for close misses."""
     wc = _count_words(text)
     if min_words <= wc <= max_words:
-        return 1.0
+        return 0.99
     elif wc < min_words:
-        return max(0.0, wc / min_words)
+        return max(0.01, wc / min_words)
     else:
         # Over max — partial penalty
         overage = wc - max_words
-        return max(0.5, 1.0 - (overage / max_words) * 0.5)
+        return max(0.5, 0.99 - (overage / max_words) * 0.5)
 
 
 def _has_sections(text: str, sections: list) -> float:
     """Return fraction of required section headings found."""
     if not sections:
-        return 1.0
+        return 0.99
     text_lower = text.lower()
     found = sum(1 for s in sections if s.lower() in text_lower)
     return found / len(sections)
@@ -72,22 +72,22 @@ def _has_stats(text: str) -> float:
     stat_pattern = r"\b\d+[\.,]?\d*\s*(%|billion|million|trillion|thousand|percent)|\$\d+|\b\d{4}\b"
     matches = re.findall(stat_pattern, text, re.IGNORECASE)
     if len(matches) >= 2:
-        return 1.0
+        return 0.99
     elif len(matches) == 1:
         return 0.5
-    return 0.0
+    return 0.01
 
 
 def _exact_quotes(text: str, required_count: int) -> float:
     """Check if exactly the required number of blockquotes are present."""
     count = sum(1 for line in text.split("\n") if line.strip().startswith(">"))
-    return 1.0 if count == required_count else 0.0
+    return 0.99 if count == required_count else 0.01
 
 
 def _exact_citations(text: str, required_count: int) -> float:
     """Check if exactly the required number of citations [Ref: X] are present."""
     matches = re.findall(r"\[Ref: \d+\]", text)
-    return 1.0 if len(matches) == required_count else 0.0
+    return 0.99 if len(matches) == required_count else 0.01
 
 
 def _title_length(text: str, exact_length: int) -> float:
@@ -95,8 +95,8 @@ def _title_length(text: str, exact_length: int) -> float:
     for line in text.strip().split("\n"):
         if line.startswith("# "):
             title_text = line[2:].strip()
-            return 1.0 if len(title_text.split()) == exact_length else 0.0
-    return 0.0
+            return 0.99 if len(title_text.split()) == exact_length else 0.01
+    return 0.01
 
 
 def _starts_with(text: str, phrase: str) -> float:
@@ -105,15 +105,15 @@ def _starts_with(text: str, phrase: str) -> float:
     for line in lines:
         if line.startswith("#"):
             continue
-        return 1.0 if line.startswith(phrase) else 0.0
-    return 0.0
+        return 0.99 if line.startswith(phrase) else 0.01
+    return 0.01
 
 
 def _exact_word_frequency(text: str, target_word: str, exact_count: int) -> float:
     """Check if target_word appears exactly exact_count times."""
     # Match whole words, case-insensitive
     matches = re.findall(rf"\b{re.escape(target_word)}\b", text, re.IGNORECASE)
-    return 1.0 if len(matches) == exact_count else 0.0
+    return 0.99 if len(matches) == exact_count else 0.01
 
 
 def _exact_nth_word(text: str, target_word: str, n: int) -> float:
@@ -122,8 +122,8 @@ def _exact_nth_word(text: str, target_word: str, n: int) -> float:
     cleaned = re.sub(r"[#>*_\[\]()]", "", text)
     words = [w.strip(".,;:!?\"'") for w in cleaned.split() if w.strip(".,;:!?\"'")]
     if len(words) < n:
-        return 0.0
-    return 1.0 if words[n - 1].lower() == target_word.lower() else 0.0
+        return 0.01
+    return 0.99 if words[n - 1].lower() == target_word.lower() else 0.01
 
 
 def grade_easy(article: str, topic: str, constraints: dict = None) -> float:
@@ -242,7 +242,7 @@ def grade_hard(article: str, topic: str, constraints: dict) -> float:
 
     # Deep topic relevance
     relevance = _topic_relevance(article, topic)
-    deep_relevance = 1.0 if relevance >= 0.7 else relevance / 0.7
+    deep_relevance = 0.999 if relevance >= 0.7 else relevance / 0.7
 
     # Exact citations
     req_citations = constraints.get("exact_citations", 3)
@@ -254,14 +254,14 @@ def grade_hard(article: str, topic: str, constraints: dict) -> float:
 
     # Word Frequency
     freq_data = constraints.get("exact_word_frequency", {})
-    freq_score = 1.0
+    freq_score = 0.999
     if freq_data:
         f_scores = [_exact_word_frequency(article, w, c) for w, c in freq_data.items()]
-        freq_score = sum(f_scores) / len(f_scores) if f_scores else 1.0
+        freq_score = sum(f_scores) / len(f_scores) if f_scores else 0.999
 
     # Exact N-th word check
     nth_data = constraints.get("exact_nth_word", {})
-    nth_score = 1.0
+    nth_score = 0.999
     if nth_data:
         nth_score = _exact_nth_word(article, nth_data["word"], nth_data["n"])
 
