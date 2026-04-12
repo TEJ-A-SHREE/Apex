@@ -289,6 +289,3 @@ def grade(article: str, topic: str, difficulty: str, constraints: dict) -> float
         return grade_hard(article, topic, constraints)
     else:
         raise ValueError(f"Unknown difficulty: {difficulty}")
-
-
-
